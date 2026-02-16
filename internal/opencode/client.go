@@ -55,6 +55,24 @@ func (c *Client) Health(ctx context.Context) error {
 	return nil
 }
 
+// GetProviders fetches available model providers from the OpenCode server.
+func (c *Client) GetProviders(ctx context.Context) (ProviderResponse, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/provider", nil)
+	if err != nil {
+		return ProviderResponse{}, fmt.Errorf("create providers request: %w", err)
+	}
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return ProviderResponse{}, fmt.Errorf("get providers: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return ProviderResponse{}, fmt.Errorf("get providers status: %d", resp.StatusCode)
+	}
+	return decodeJSON[ProviderResponse](resp.Body)
+}
+
 // CreateOCSession creates a new OpenCode session.
 func (c *Client) CreateOCSession(ctx context.Context, title string) (OCSession, error) {
 	body, _ := json.Marshal(map[string]string{"title": title})
@@ -195,7 +213,7 @@ func (c *Client) GetMessages(ctx context.Context, sessionID string) ([]Message, 
 }
 
 // PromptAsync sends a prompt to a session asynchronously.
-func (c *Client) PromptAsync(ctx context.Context, sessionID, text, agent string) error {
+func (c *Client) PromptAsync(ctx context.Context, sessionID, text, agent, providerID, modelID string) error {
 	payload := map[string]interface{}{
 		"parts": []map[string]string{
 			{"type": "text", "text": text},
@@ -203,6 +221,12 @@ func (c *Client) PromptAsync(ctx context.Context, sessionID, text, agent string)
 	}
 	if agent != "" {
 		payload["agent"] = agent
+	}
+	if providerID != "" && modelID != "" {
+		payload["model"] = map[string]string{
+			"providerID": providerID,
+			"modelID":   modelID,
+		}
 	}
 	body, _ := json.Marshal(payload)
 

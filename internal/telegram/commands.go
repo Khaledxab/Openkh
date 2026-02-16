@@ -34,7 +34,7 @@ func (b *Bot) startCommand(ctx context.Context, tgBot *bot.Bot, update *models.U
 		"/delete - Delete session\n/purge - Delete all sessions\n" +
 		"/diff - Show current changes\n/history - Show message history\n" +
 		"/stop - Stop current operation\n/status - Bot status\n/stats - Usage statistics\n" +
-		"/clear - Clear current session"
+		"/clear - Clear current session\n/model - Select model\n/think - Toggle thinking"
 
 	tgBot.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: chatID,
@@ -60,7 +60,7 @@ func (b *Bot) helpCommand(ctx context.Context, tgBot *bot.Bot, update *models.Up
 		"Basic:\n/start - Start fresh\n/help - Show this help\n/new - New conversation\n/stop - Stop current operation\n\n" +
 		"Session:\n/sessions - List all sessions\n/switch <id> - Switch to session\n/rename <title> - Rename session\n/delete <id> - Delete session\n/purge - Delete all sessions\n\n" +
 		"Agent:\n/agent - Switch agent\n/agent <name> - Set agent directly\n\n" +
-		"Tools:\n/diff - Show changes\n/history - Show messages\n/model - Show current model\n/think - Toggle thinking display\n\n" +
+		"Tools:\n/diff - Show changes\n/history - Show messages\n/model - Select model\n/think - Toggle thinking display\n\n" +
 		"Info:\n/status - Bot status\n/stats - Usage statistics\n/clear - Clear current session"
 
 	tgBot.SendMessage(ctx, &bot.SendMessageParams{
@@ -156,16 +156,6 @@ func (b *Bot) clearCommand(ctx context.Context, tgBot *bot.Bot, update *models.U
 	tgBot.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: chatID,
 		Text:   "Data cleared!",
-	})
-}
-
-func (b *Bot) modelCommand(ctx context.Context, tgBot *bot.Bot, update *models.Update) {
-	if update.Message == nil {
-		return
-	}
-	tgBot.SendMessage(ctx, &bot.SendMessageParams{
-		ChatID: update.Message.Chat.ID,
-		Text:   "Model: default (OpenCode model)",
 	})
 }
 

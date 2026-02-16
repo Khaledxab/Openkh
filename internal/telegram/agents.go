@@ -13,10 +13,7 @@ import (
 )
 
 func defaultAgents() map[string]string {
-	return map[string]string{
-		"sisyphus": "General coding",
-		"oracle":   "Deep analysis",
-	}
+	return map[string]string{}
 }
 
 func parseAgents(raw string) map[string]string {
@@ -45,6 +42,14 @@ func (b *Bot) agentCommand(ctx context.Context, tgBot *bot.Bot, update *models.U
 	}
 	chatID := update.Message.Chat.ID
 	if !b.requireAuth(chatID, tgBot, ctx) {
+		return
+	}
+
+	if len(b.Agents) == 0 {
+		tgBot.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: chatID,
+			Text:   "No agents configured. Set AGENTS env var or install an OpenCode plugin that provides agents.",
+		})
 		return
 	}
 
