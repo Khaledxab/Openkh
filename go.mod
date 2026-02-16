@@ -1,4 +1,4 @@
-module opencode-bot
+module github.com/Khaledxab/Openkh
 
 go 1.21.5
 
