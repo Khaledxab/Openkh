@@ -51,18 +51,18 @@ func (b *Bot) defaultHandler(ctx context.Context, tgBot *bot.Bot, update *models
 
 	var sessionID string
 	var agent string
+	var providerID string
+	var modelID string
 
 	if b.DB != nil {
 		sess, err := b.DB.GetSession(chatID)
 		if err == nil {
 			sessionID = sess.SessionID
 			agent = sess.Agent
+			providerID = sess.ModelProvider
+			modelID = sess.ModelID
 			b.DB.IncrementCount(chatID)
 		}
-	}
-
-	if agent == "" {
-		agent = "sisyphus"
 	}
 
 	if sessionID == "" && b.Client != nil {
@@ -79,13 +79,15 @@ func (b *Bot) defaultHandler(ctx context.Context, tgBot *bot.Bot, update *models
 
 		if b.DB != nil {
 			s := store.Session{
-				ChatID:       chatID,
-				SessionID:    sessionID,
-				Title:        newSess.Title,
-				Agent:        agent,
-				MessageCount: 1,
-				CreatedAt:    time.Now(),
-				LastUsed:     time.Now(),
+				ChatID:        chatID,
+				SessionID:     sessionID,
+				Title:         newSess.Title,
+				Agent:         agent,
+				ModelProvider: providerID,
+				ModelID:       modelID,
+				MessageCount:  1,
+				CreatedAt:     time.Now(),
+				LastUsed:      time.Now(),
 			}
 			if err := b.DB.SetSession(s); err != nil {
 				log.Printf("[defaultHandler] Error saving session: %v", err)
@@ -107,7 +109,7 @@ func (b *Bot) defaultHandler(ctx context.Context, tgBot *bot.Bot, update *models
 	}
 
 	if b.Client != nil && sessionID != "" {
-		if err := b.Client.PromptAsync(ctx, sessionID, text, agent); err != nil {
+		if err := b.Client.PromptAsync(ctx, sessionID, text, agent, providerID, modelID); err != nil {
 			log.Printf("[defaultHandler] Error sending prompt: %v", err)
 			tgBot.EditMessageText(ctx, &bot.EditMessageTextParams{
 				ChatID:    chatID,
@@ -142,6 +144,14 @@ func (b *Bot) handleCallbackQuery(ctx context.Context, tgBot *bot.Bot, update *m
 	if strings.HasPrefix(data, "agent_") {
 		agentName := strings.TrimPrefix(data, "agent_")
 		b.handleAgentCallback(ctx, tgBot, callback, agentName)
+		return
+	}
+
+	if strings.HasPrefix(data, "model_") {
+		parts := strings.SplitN(strings.TrimPrefix(data, "model_"), "/", 2)
+		if len(parts) == 2 {
+			b.handleModelCallback(ctx, tgBot, callback, parts[0], parts[1])
+		}
 		return
 	}
 }

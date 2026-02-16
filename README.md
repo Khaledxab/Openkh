@@ -2,6 +2,10 @@
 
 A Telegram bot that connects to [OpenCode](https://opencode.ai) AI via its REST API, providing real-time streaming responses, session management, and full conversation persistence.
 
+## Live Demo
+
+The bot powers the production website: **[openkh.khaledxab.com](https://openkh.khaledxab.com)**
+
 ## Architecture
 
 ```

@@ -25,8 +25,12 @@ func (b *Bot) statusCommand(ctx context.Context, tgBot *bot.Bot, update *models.
 	if b.DB != nil {
 		sess, err := b.DB.GetSession(chatID)
 		if err == nil {
-			sessionInfo = fmt.Sprintf("\nSession: %s\nAgent: %s\nMessages: %d",
-				shortID(sess.SessionID), agentOrDefault(sess.Agent), sess.MessageCount)
+			modelInfo := "server default"
+			if sess.ModelProvider != "" && sess.ModelID != "" {
+				modelInfo = sess.ModelID + " (" + sess.ModelProvider + ")"
+			}
+			sessionInfo = fmt.Sprintf("\nSession: %s\nModel: %s\nAgent: %s\nMessages: %d",
+				shortID(sess.SessionID), modelInfo, agentOrDefault(sess.Agent), sess.MessageCount)
 		}
 	}
 
@@ -81,7 +85,7 @@ func (b *Bot) statsCommand(ctx context.Context, tgBot *bot.Bot, update *models.U
 
 func agentOrDefault(agent string) string {
 	if agent == "" {
-		return "sisyphus"
+		return "default"
 	}
 	return agent
 }
