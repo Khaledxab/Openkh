@@ -112,3 +112,24 @@ type HealthResponse struct {
 type SuccessResponse struct {
 	Success bool `json:"success"`
 }
+
+// ProviderResponse represents the response from GET /provider.
+type ProviderResponse struct {
+	All       []Provider        `json:"all"`
+	Default   map[string]string `json:"default"`
+	Connected []string          `json:"connected"`
+}
+
+// Provider represents a model provider.
+type Provider struct {
+	ID     string           `json:"id"`
+	Name   string           `json:"name"`
+	Models map[string]Model `json:"models"`
+}
+
+// Model represents a model within a provider.
+type Model struct {
+	ID         string `json:"id"`
+	ProviderID string `json:"providerID"`
+	Name       string `json:"name"`
+}
