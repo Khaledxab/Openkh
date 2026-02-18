@@ -128,10 +128,13 @@ func (b *Bot) defaultHandler(ctx context.Context, tgBot *bot.Bot, update *models
 }
 
 func (b *Bot) handleCallbackQuery(ctx context.Context, tgBot *bot.Bot, update *models.Update) {
+	log.Printf("[handleCallbackQuery] Called")
 	if update.CallbackQuery == nil {
+		log.Printf("[handleCallbackQuery] CallbackQuery is nil")
 		return
 	}
 	callback := update.CallbackQuery
+	log.Printf("[handleCallbackQuery] callbackID=%s, data=%s", callback.ID, callback.Data)
 	chatID := callback.Message.Message.Chat.ID
 	data := callback.Data
 
