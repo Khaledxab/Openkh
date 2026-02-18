@@ -13,28 +13,31 @@ import (
 )
 
 func (b *Bot) sessionsCommand(ctx context.Context, tgBot *bot.Bot, update *models.Update) {
+	log.Printf("[sessionsCommand] Called")
 	if update.Message == nil {
+		log.Printf("[sessionsCommand] update.Message is nil")
 		return
 	}
 	chatID := update.Message.Chat.ID
+	log.Printf("[sessionsCommand] chatID=%d", chatID)
 	if !b.requireAuth(chatID, tgBot, ctx) {
+		log.Printf("[sessionsCommand] requireAuth returned false")
 		return
 	}
-	if b.Client == nil {
-		tgBot.SendMessage(ctx, &bot.SendMessageParams{ChatID: chatID, Text: "OpenCode client not initialized"})
-		return
-	}
+	log.Printf("[sessionsCommand] auth passed, Client=%v", b.Client)
 
+	log.Printf("[sessionsCommand] Calling ListOCSessions...")
 	sessions, err := b.Client.ListOCSessions(ctx)
-	if err != nil {
-		log.Printf("[sessionsCommand] Error: %v", err)
-		tgBot.SendMessage(ctx, &bot.SendMessageParams{ChatID: chatID, Text: "Failed to fetch sessions"})
-		return
-	}
+	log.Printf("[sessionsCommand] ListOCSessions returned, err=%v, sessions=%d", err, len(sessions))
+	
 	if len(sessions) == 0 {
+		log.Printf("[sessionsCommand] No sessions, sending message")
 		tgBot.SendMessage(ctx, &bot.SendMessageParams{ChatID: chatID, Text: "No sessions found"})
 		return
 	}
+
+	totalSessions := len(sessions)
+	log.Printf("[sessionsCommand] Building response for %d sessions", totalSessions)
 
 	var currentSessionID string
 	if b.DB != nil {
@@ -43,11 +46,20 @@ func (b *Bot) sessionsCommand(ctx context.Context, tgBot *bot.Bot, update *model
 			currentSessionID = sess.SessionID
 		}
 	}
+	log.Printf("[sessionsCommand] Got current session: %s", currentSessionID)
 
 	var sb strings.Builder
-	sb.WriteString("Available Sessions\n\n")
+	sb.WriteString(fmt.Sprintf("Available Sessions (%d total, showing first %d)\n\n", totalSessions, len(sessions)))
 
 	var keyboard [][]models.InlineKeyboardButton
+	log.Printf("[sessionsCommand] Starting loop over sessions")
+	
+	// Limit to 20 sessions max to avoid message too long error
+	maxSessions := 20
+	if len(sessions) > maxSessions {
+		sessions = sessions[:maxSessions]
+	}
+	
 	for i, sess := range sessions {
 		title := sess.Title
 		if title == "" {
@@ -62,16 +74,23 @@ func (b *Bot) sessionsCommand(ctx context.Context, tgBot *bot.Bot, update *model
 		keyboard = append(keyboard, []models.InlineKeyboardButton{
 			{Text: fmt.Sprintf("Switch to %s", shortID(sess.ID)), CallbackData: "switch_" + sess.ID},
 		})
+		if i == 0 {
+			log.Printf("[sessionsCommand] First iteration done")
+		}
 	}
+	log.Printf("[sessionsCommand] Loop done, keyboard size: %d", len(keyboard))
+	
 	sb.WriteString("\nUse /switch <id> to switch sessions")
-
-	tgBot.SendMessage(ctx, &bot.SendMessageParams{
+	log.Printf("[sessionsCommand] Sending message to chatID=%d, text length=%d", chatID, len(sb.String()))
+	
+	msg, err := tgBot.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: chatID,
 		Text:   sb.String(),
 		ReplyMarkup: &models.InlineKeyboardMarkup{
 			InlineKeyboard: keyboard,
 		},
 	})
+	log.Printf("[sessionsCommand] SendMessage result: msgID=%d, err=%v", msg.ID, err)
 }
 
 func (b *Bot) switchCommand(ctx context.Context, tgBot *bot.Bot, update *models.Update) {
